@@ -1,0 +1,212 @@
+<!-- @format -->
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Stitch Headpat Overlay</title>
+
+		<!-- ComfyJS: The bridge between Twitch and your code -->
+		<script src="https://cdn.jsdelivr.net/npm/comfy.js@latest/dist/comfy.min.js"></script>
+
+		<style>
+			/* Makes the background invisible in OBS */
+			body {
+				margin: 0;
+				padding: 0;
+				background: transparent;
+				overflow: hidden;
+				width: 100vw;
+				height: 100vh;
+				position: relative;
+			}
+
+			/* ========== STITCH CONTAINER ========== */
+			/* This holds both Stitch and the hand in position */
+			.stitch-wrapper {
+				position: absolute;
+				bottom: 20px;
+				right: 20px; /* Put him in bottom-right corner - adjust as needed */
+				width: 300px;
+				height: 350px;
+			}
+
+			/* ========== STITCH (The Base) ========== */
+			.stitch {
+				position: absolute;
+				bottom: 0;
+				left: 50%;
+				transform: translateX(-50%);
+				width: 250px;
+				height: auto;
+				transition: transform 0.1s ease;
+				/* DROP YOUR STITCH PNG URL HERE */
+				/* For testing, I'm using a placeholder - swap with your actual image! */
+			}
+
+			/* When Stitch gets pet, he squishes a little */
+			.stitch.squish {
+				animation: squish-squish 0.5s ease-in-out 3;
+			}
+
+			@keyframes squish-squish {
+				0% {
+					transform: translateX(-50%) scaleY(1);
+				}
+				50% {
+					transform: translateX(-50%) scaleY(0.9);
+				} /* Squish down */
+				100% {
+					transform: translateX(-50%) scaleY(1);
+				}
+			}
+
+			/* ========== THE HAND ========== */
+			.hand {
+				position: absolute;
+				top: -100px; /* Starts above the visible area */
+				left: 50%;
+				transform: translateX(-50%);
+				width: 120px;
+				height: auto;
+				opacity: 0; /* Hidden until triggered */
+				/* DROP YOUR HAND PNG URL HERE */
+			}
+
+			/* When the redeem hits, hand comes down for pats */
+			.hand.patting {
+				opacity: 1;
+				animation: pat-pat 0.5s ease-in-out 3; /* 3 pats! */
+			}
+
+			@keyframes pat-pat {
+				0% {
+					top: -100px;
+				}
+				50% {
+					top: 20px;
+				} /* Hand reaches Stitch's head */
+				100% {
+					top: -100px;
+				}
+			}
+
+			/* ========== OPTIONAL: Hearts that pop up ========== */
+			.heart {
+				position: absolute;
+				font-size: 2rem;
+				opacity: 0;
+				pointer-events: none;
+			}
+
+			.heart.float {
+				animation: float-heart 1.5s ease-out forwards;
+			}
+
+			@keyframes float-heart {
+				0% {
+					opacity: 1;
+					transform: translateY(0) scale(0.5);
+				}
+				100% {
+					opacity: 0;
+					transform: translateY(-150px) scale(1.2);
+				}
+			}
+
+			/* ========== MAVSCRIPT TOUCH: Glow effect ========== */
+			.stitch-wrapper.active {
+				filter: drop-shadow(0 0 15px #f7c6c7); /* Your blush pink glow! */
+			}
+		</style>
+	</head>
+	<body>
+		<div class="stitch-wrapper" id="stitchWrapper">
+			<!-- SWAP THESE SRC URLs WITH YOUR ACTUAL IMAGES -->
+			<img
+				src="https://i.imgur.com/placeholder-stitch.png"
+				alt="Stitch"
+				class="stitch"
+				id="stitch" />
+			<img
+				src="https://i.imgur.com/placeholder-hand.png"
+				alt="Hand"
+				class="hand"
+				id="hand" />
+		</div>
+
+		<script>
+			// ========== CONFIG: Change these to match YOUR setup ==========
+			const YOUR_CHANNEL = "mavscriptblu"; // Your Twitch channel name
+			const REDEEM_NAME = "Headpats"; // EXACT name of your channel point redeem
+
+			// ========== GRAB THE ELEMENTS ==========
+			const stitch = document.getElementById("stitch");
+			const hand = document.getElementById("hand");
+			const wrapper = document.getElementById("stitchWrapper");
+
+			// ========== THE MAGIC: Trigger the animation ==========
+			function triggerHeadpat(username) {
+				console.log(`${username} is giving headpats!`);
+
+				// Add all the animation classes
+				wrapper.classList.add("active");
+				stitch.classList.add("squish");
+				hand.classList.add("patting");
+
+				// Spawn some hearts because why not
+				spawnHearts();
+
+				// Clean up after animation finishes (1.5 seconds for 3 pats)
+				setTimeout(() => {
+					wrapper.classList.remove("active");
+					stitch.classList.remove("squish");
+					hand.classList.remove("patting");
+				}, 1600);
+			}
+
+			// ========== BONUS: Floating hearts ==========
+			function spawnHearts() {
+				const hearts = ["💙", "💜", "💗"]; // Stitch colors!
+
+				for (let i = 0; i < 5; i++) {
+					setTimeout(() => {
+						const heart = document.createElement("div");
+						heart.className = "heart";
+						heart.textContent =
+							hearts[Math.floor(Math.random() * hearts.length)];
+						heart.style.left = `${Math.random() * 200 + 50}px`;
+						heart.style.bottom = "150px";
+						wrapper.appendChild(heart);
+
+						// Trigger animation
+						requestAnimationFrame(() => heart.classList.add("float"));
+
+						// Remove after animation
+						setTimeout(() => heart.remove(), 1500);
+					}, i * 200); // Stagger the hearts
+				}
+			}
+
+			// ========== COMFYJS: Listen for Twitch events ==========
+			ComfyJS.onReward = (user, reward, cost, message) => {
+				// Check if this is THE redeem we care about
+				if (reward === REDEEM_NAME) {
+					triggerHeadpat(user);
+				}
+			};
+
+			// Connect to your channel (no auth needed for reading redeems!)
+			ComfyJS.Init(YOUR_CHANNEL);
+
+			// ========== TEST BUTTON: Remove this after testing! ==========
+			// Click anywhere to test the animation without needing a real redeem
+			document.body.addEventListener("click", () => {
+				triggerHeadpat("TestUser");
+			});
+
+			console.log("🧵 Stitch Headpat Overlay loaded! Waiting for pats...");
+		</script>
+	</body>
+</html>

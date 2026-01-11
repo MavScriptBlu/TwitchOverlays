@@ -1,0 +1,83 @@
+<!-- @format -->
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Headpat Overlay</title>
+		<script src="https://cdn.jsdelivr.net/npm/comfy.js@latest/dist/comfy.min.js"></script>
+
+		<style>
+			body {
+				margin: 0;
+				background: transparent;
+				overflow: hidden;
+				width: 100vw;
+				height: 100vh;
+			}
+
+			.hand {
+				position: absolute;
+				top: -200px; /* Starts off-screen above */
+				left: 50%;
+				transform: translateX(-50%);
+				width: 200px; /* Adjust size as needed */
+				height: auto;
+				opacity: 0;
+			}
+
+			/* The petting motion */
+			.hand.patting {
+				opacity: 1;
+				animation: pet-pet 0.4s ease-in-out 5; /* 5 pats! */
+			}
+
+			@keyframes pet-pet {
+				0% {
+					top: -50px;
+					transform: translateX(-50%) rotate(-10deg);
+				}
+				50% {
+					top: 30px;
+					transform: translateX(-50%) rotate(5deg);
+				} /* Hand pushes down */
+				100% {
+					top: -50px;
+					transform: translateX(-50%) rotate(-10deg);
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<img src="./hand.png" alt="Pat hand" class="hand" id="hand" />
+
+		<script>
+			const YOUR_CHANNEL = "mavscriptblu";
+			const REDEEM_NAME = "Headpats"; // Change to your exact redeem name
+
+			const hand = document.getElementById("hand");
+
+			function triggerHeadpat(username) {
+				console.log(`${username} is petting you!`);
+				hand.classList.add("patting");
+
+				// Remove class after animation so it can trigger again
+				setTimeout(() => {
+					hand.classList.remove("patting");
+				}, 2100); // 5 pats × 0.4s = 2 seconds + buffer
+			}
+
+			// Listen for channel point redeems
+			ComfyJS.onReward = (user, reward, cost, message) => {
+				if (reward === REDEEM_NAME) {
+					triggerHeadpat(user);
+				}
+			};
+
+			ComfyJS.Init(YOUR_CHANNEL);
+
+			// TEST: Click anywhere to preview (remove this later!)
+			document.body.addEventListener("click", () => triggerHeadpat("TestUser"));
+		</script>
+	</body>
+</html>
