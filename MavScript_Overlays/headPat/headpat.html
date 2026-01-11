@@ -5,9 +5,15 @@
 	<head>
 		<meta charset="UTF-8" />
 		<title>Headpat Overlay</title>
+
+		<!-- ========== COMFYJS LIBRARY ========== -->
+		<!-- This is the bridge between Twitch chat and your code -->
+		<!-- It listens for commands, redeems, follows, etc. -->
 		<script src="https://cdn.jsdelivr.net/npm/comfy.js@latest/dist/comfy.min.js"></script>
 
 		<style>
+			/* ========== BASE STYLES ========== */
+			/* Makes the background invisible in OBS */
 			body {
 				margin: 0;
 				background: transparent;
@@ -16,31 +22,38 @@
 				height: 100vh;
 			}
 
+			/* ========== HAND IMAGE ========== */
 			.hand {
 				position: absolute;
 				top: -200px; /* Starts off-screen above */
-				left: 50%;
-				transform: translateX(-50%);
+				left: 50%; /* Centered horizontally */
+				transform: translateX(-50%); /* Truly centers it */
 				width: 200px; /* Adjust size as needed */
 				height: auto;
-				opacity: 0;
+				opacity: 0; /* Invisible until triggered */
 			}
 
-			/* The petting motion */
+			/* ========== ANIMATION TRIGGER ========== */
+			/* When .patting class is added, hand becomes visible and animates */
 			.hand.patting {
 				opacity: 1;
 				animation: pet-pet 0.4s ease-in-out 5; /* 5 pats! */
 			}
 
+			/* ========== THE PETTING MOTION ========== */
+			/* Keyframes define the movement over time */
 			@keyframes pet-pet {
+				/* Start position: hand is up and tilted back */
 				0% {
 					top: -50px;
 					transform: translateX(-50%) rotate(-10deg);
 				}
+				/* Middle position: hand pushes down onto head */
 				50% {
-					top: 30px;
+					top: 30px; /* Adjust this to hit your head right! */
 					transform: translateX(-50%) rotate(5deg);
-				} /* Hand pushes down */
+				}
+				/* End position: hand lifts back up */
 				100% {
 					top: -50px;
 					transform: translateX(-50%) rotate(-10deg);
@@ -49,34 +62,51 @@
 		</style>
 	</head>
 	<body>
+		<!-- ========== THE HAND IMAGE ========== -->
+		<!-- Make sure the image file is in the same folder as this HTML -->
 		<img src="./hand.png" alt="Pat hand" class="hand" id="hand" />
 
 		<script>
+			// ========== CONFIG ==========
+			// Your Twitch channel name (lowercase)
 			const YOUR_CHANNEL = "mavscriptblu";
-			const REDEEM_NAME = "Headpats"; // Change to your exact redeem name
 
+			// ========== GRAB THE HAND ELEMENT ==========
 			const hand = document.getElementById("hand");
 
+			// ========== THE ANIMATION FUNCTION ==========
+			// This gets called whenever someone triggers a headpat
 			function triggerHeadpat(username) {
 				console.log(`${username} is petting you!`);
+
+				// Add the .patting class to start the animation
 				hand.classList.add("patting");
 
-				// Remove class after animation so it can trigger again
+				// Remove the class after animation finishes
+				// This resets it so it can be triggered again
+				// Math: 5 pats × 0.4s = 2 seconds + 100ms buffer
 				setTimeout(() => {
 					hand.classList.remove("patting");
-				}, 2100); // 5 pats × 0.4s = 2 seconds + buffer
+				}, 2100);
 			}
 
-			// Listen for channel point redeems
-			ComfyJS.onReward = (user, reward, cost, message) => {
-				if (reward === REDEEM_NAME) {
+			// ========== CHAT COMMAND LISTENER ==========
+			// Fires whenever someone uses a ! command in chat
+			ComfyJS.onCommand = (user, command, message, flags, extra) => {
+				// Check if the command matches any of our trigger words
+				// !headpat, !pat, or !pet will all work
+				if (command === "headpat" || command === "pat" || command === "pet") {
 					triggerHeadpat(user);
 				}
 			};
 
+			// ========== CONNECT TO TWITCH ==========
+			// This starts listening to your channel's chat
 			ComfyJS.Init(YOUR_CHANNEL);
 
-			// TEST: Click anywhere to preview (remove this later!)
+			// ========== TEST MODE ==========
+			// Click anywhere on the page to test the animation
+			// DELETE THIS after you've confirmed it works!
 			document.body.addEventListener("click", () => triggerHeadpat("TestUser"));
 		</script>
 	</body>
